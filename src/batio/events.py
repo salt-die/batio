@@ -235,8 +235,6 @@ class MouseEvent(Event):
         The change in x-coordinate of the mouse position.
     dy : int
         The change in y-coordinate of the mouse position.
-    nclicks : int, default: 0
-        The number of consecutive ``"mouse_down"`` events with same button.
 
     Attributes
     ----------
@@ -256,8 +254,6 @@ class MouseEvent(Event):
         The change in x-coordinate of the mouse position.
     dy : int
         The change in y-coordinate of the mouse position.
-    nclicks : int
-        The number of consecutive ``"mouse_down"`` events with same button.
     meta : bool
         Alias for ``alt``.
     control : bool
@@ -280,8 +276,6 @@ class MouseEvent(Event):
     """The change in x-coordinate of the mouse position."""
     dy: int
     """The change in y-coordinate of the mouse position."""
-    nclicks: int = 0
-    """The number of consecutive ``"mouse_down"`` events with same button."""
 
     @property
     def meta(self) -> bool:
