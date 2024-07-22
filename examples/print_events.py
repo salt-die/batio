@@ -8,6 +8,7 @@ from batio.events import Event, KeyEvent
 
 async def main():
     """Print terminal input events."""
+    terminal = get_platform_terminal()
     ctrl_c_pressed = False
 
     def event_handler(events: list[Event]) -> None:
@@ -18,7 +19,6 @@ async def main():
             else:
                 print(event)
 
-    terminal = get_platform_terminal()
     terminal.raw_mode()
     terminal.attach(event_handler)
     terminal.enable_mouse_support()

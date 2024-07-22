@@ -13,8 +13,8 @@ COLOR_PAIR_ANSI = "\x1b[38;2;{};{};{};48;2;{};{};{}m"
 
 async def main():
     """Create a pressable button."""
-    ctrl_c_pressed = False
     terminal = get_platform_terminal()
+    ctrl_c_pressed = False
     button_pressed = False
 
     def collides_button(point) -> bool:
