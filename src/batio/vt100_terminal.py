@@ -605,20 +605,11 @@ class Vt100Terminal(ABC):
         background_color : tuple[int, int, int] | None, default: None
             Set background color if given.
         """
-        self._out_buffer.append(
-            "\x1b["
-            f"{"1;" if bold else ""}"
-            f"{"2;" if faint else ""}"
-            f"{"3;" if italic else ""}"
-            f"{"4;" if underline else ""}"
-            f"{"5;" if blink else ""}"
-            f"{"7;" if reverse else ""}"
-            f"{"9;" if strikethrough else ""}"
-            f"{"53" if overline else ""}"
-            "m"
-        )
+        params = "1", "2", "3", "4", "5", "7", "9", "53"
+        styles = bold, faint, italic, underline, blink, reverse, strikethrough, overline
+        args = ";".join(param for param, style in zip(params, styles) if style)
+        self._out_buffer.append(f"\x1b[{args}m")
         if foreground_color:
             self._out_buffer.append("\x1b[38;2;{};{};{}m".format(*foreground_color))
-
         if background_color:
             self._out_buffer.append("\x1b[48;2;{};{};{}m".format(*background_color))
