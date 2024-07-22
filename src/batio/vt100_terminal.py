@@ -103,10 +103,10 @@ class Vt100Terminal(ABC):
         """Timeout handle for executing escape buffer."""
         self._expect_device_status_report: bool = False
         """Whether input parser should expect a device status report."""
-        self._last_y: int = 0
-        """Last mouse y-coordinate."""
         self._last_x: int = 0
         """Laste mouse x-coordinate."""
+        self._last_y: int = 0
+        """Last mouse y-coordinate."""
         self._last_drs_request_time: float = monotonic()
         """When the last device status report was requested."""
         self._event_handler: Callable[[list[Event]], None] | None = None
