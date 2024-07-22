@@ -5,10 +5,9 @@ import asyncio
 from batio import get_platform_terminal
 from batio.events import Event, KeyEvent, MouseEvent
 
-NORMAL_COLOR_PAIR = 221, 228, 237, 42, 60, 160
-HOVER_COLOR_PAIR = 255, 240, 246, 50, 72, 192
-PRESS_COLOR_PAIR = 255, 240, 246, 196, 162, 25
-COLOR_PAIR_ANSI = "\x1b[38;2;{};{};{};48;2;{};{};{}m"
+NORMAL = (221, 228, 237), (42, 60, 160)
+HOVER = (255, 240, 246), (50, 72, 192)
+PRESS = (255, 240, 246), (196, 162, 25)
 
 
 async def main():
@@ -22,19 +21,15 @@ async def main():
         cx, cy = point
         return x <= cx < x + 8 and y <= cy < y + 3
 
-    def draw_button(color_pair):
-        button_color = COLOR_PAIR_ANSI.format(*color_pair)
-        terminal.write(button_color)
-        terminal.write("        ")
+    def draw_button(foreground, background):
+        terminal.line_feed(2)
+        terminal.cursor_previous_line(2)
+        terminal.sgr_parameters(
+            foreground_color=foreground, background_color=background
+        )
+        terminal.write("        \n Button \n        ")
+        terminal.cursor_previous_line(2)
         terminal.reset_attributes()
-        terminal.write("\n")
-        terminal.write(button_color)
-        terminal.write(" button ")
-        terminal.reset_attributes()
-        terminal.write("\n")
-        terminal.write(button_color)
-        terminal.write("        ")
-        terminal.write("\x1b[2F")  # Move to beginning of row two lines up.
         terminal.flush()
 
     def event_handler(events: list[Event]) -> None:
@@ -46,20 +41,12 @@ async def main():
                 if button_pressed:
                     if event.event_type == "mouse_up":
                         button_pressed = False
-                        draw_button(
-                            HOVER_COLOR_PAIR
-                            if collides_button(event.pos)
-                            else NORMAL_COLOR_PAIR
-                        )
+                        draw_button(*HOVER if collides_button(event.pos) else NORMAL)
                 elif event.event_type == "mouse_down" and collides_button(event.pos):
                     button_pressed = True
-                    draw_button(PRESS_COLOR_PAIR)
+                    draw_button(*PRESS)
                 else:
-                    draw_button(
-                        HOVER_COLOR_PAIR
-                        if collides_button(event.pos)
-                        else NORMAL_COLOR_PAIR
-                    )
+                    draw_button(*HOVER if collides_button(event.pos) else NORMAL)
 
     terminal.raw_mode()
     terminal.attach(event_handler)
@@ -67,7 +54,7 @@ async def main():
     terminal.hide_cursor()
     terminal.flush()
 
-    draw_button(NORMAL_COLOR_PAIR)
+    draw_button(*NORMAL)
     terminal.request_cursor_position_report()
 
     while not ctrl_c_pressed:

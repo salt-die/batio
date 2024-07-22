@@ -128,7 +128,10 @@ class Vt100Terminal(ABC):
         """
         Start generating events from stdin.
 
-        ``event_handler`` will be called with generated events.
+        Parameters
+        ----------
+        event_handler : Callable[[list[Event]], None]
+            Callable that handles input events.
         """
 
     @abstractmethod
@@ -146,7 +149,7 @@ class Vt100Terminal(ABC):
         cols, rows = os.get_terminal_size()
         return Size(cols, rows)
 
-    def feed(self, data: str) -> None:
+    def _feed(self, data: str) -> None:
         """Generate events from terminal input data."""
         if self._reset_timer_handle is not None:
             self._reset_timer_handle.cancel()
@@ -307,11 +310,18 @@ class Vt100Terminal(ABC):
             self._event_handler(self.events())
 
     def write(self, data: str) -> None:
-        """Write ``data`` to output buffer."""
+        """
+        Write ``data`` to output buffer.
+
+        Parameters
+        ----------
+        data : str
+            Data to write to output buffer.
+        """
         self._out_buffer.append(data)
 
     def flush(self) -> None:
-        """Write buffer to output stream and flush."""
+        """Write output buffer to stdout and flush."""
         if len(self._out_buffer) == 0:
             return
 
@@ -321,7 +331,14 @@ class Vt100Terminal(ABC):
         sys.stdout.flush()
 
     def set_title(self, title: str) -> None:
-        """Set terminal title."""
+        """
+        Set terminal title.
+
+        Parameters
+        ----------
+        title : str
+            The new terminal title.
+        """
         self._out_buffer.append(f"\x1b]2;{title}\x07")
 
     def enter_alternate_screen(self) -> None:
@@ -352,10 +369,6 @@ class Vt100Terminal(ABC):
             "\x1b[?1006l"  # SET_URXVT_EXT_MODE_MOUSE
         )
 
-    def reset_attributes(self) -> None:
-        """Reset character attributes."""
-        self._out_buffer.append("\x1b[0m")
-
     def enable_bracketed_paste(self) -> None:
         """Enable bracketed paste in terminal."""
         self._out_buffer.append("\x1b[?2004h")
@@ -363,14 +376,6 @@ class Vt100Terminal(ABC):
     def disable_bracketed_paste(self) -> None:
         """Disable bracketed paste in terminal."""
         self._out_buffer.append("\x1b[?2004l")
-
-    def show_cursor(self) -> None:
-        """Show cursor in terminal."""
-        self._out_buffer.append("\x1b[?25h")
-
-    def hide_cursor(self) -> None:
-        """Hide cursor in terminal."""
-        self._out_buffer.append("\x1b[?25l")
 
     def enable_reporting_focus(self) -> None:
         """Enable reporting terminal focus."""
@@ -380,6 +385,14 @@ class Vt100Terminal(ABC):
         """Disable reporting terminal focus."""
         self._out_buffer.append("\x1b[?1004l")
 
+    def show_cursor(self) -> None:
+        """Show cursor in terminal."""
+        self._out_buffer.append("\x1b[?25h")
+
+    def hide_cursor(self) -> None:
+        """Hide cursor in terminal."""
+        self._out_buffer.append("\x1b[?25l")
+
     def request_cursor_position_report(self) -> None:
         """Report current cursor position."""
         self._expect_device_status_report = True
@@ -387,11 +400,103 @@ class Vt100Terminal(ABC):
         self._out_buffer.append("\x1b[6n")
         self.flush()
 
-    def move_cursor(self, pos: Point | None = None) -> None:
+    def line_feed(self, n: int = 1) -> None:
+        """
+        Move to next line, scrolling up if at bottom of screen.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of times to repeat instruction.
+        """
+        self._out_buffer.append("\x0a" * n)
+
+    def cursor_up(self, n: int = 1) -> None:
+        """
+        Move cursor up ``n`` rows.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of rows to move cursor.
+        """
+        self._out_buffer.append(f"\x1b[{n}A")
+
+    def cursor_down(self, n: int = 1) -> None:
+        """
+        Move cursor down ``n`` rows.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of rows to move cursor.
+        """
+        self._out_buffer.append(f"\x1b[{n}B")
+
+    def cursor_forward(self, n: int = 1) -> None:
+        """
+        Move cursor right ``n`` columns.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of columns to move cursor.
+        """
+        self._out_buffer.append(f"\x1b[{n}C")
+
+    def cursor_back(self, n: int = 1) -> None:
+        """
+        Move cursor left ``n`` columns.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of columns to move cursor.
+        """
+        self._out_buffer.append(f"\x1b[{n}D")
+
+    def cursor_next_line(self, n: int = 1) -> None:
+        """
+        Move cursor to beginning of the line ``n`` rows down.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of rows to move cursor.
+        """
+        self._out_buffer.append(f"\x1b[{n}E")
+
+    def cursor_previous_line(self, n: int = 1) -> None:
+        """
+        Move cursor to beginning of the line ``n`` rows up.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of rows to move cursor.
+        """
+        self._out_buffer.append(f"\x1b[{n}F")
+
+    def cursor_horizontal_absolute(self, n: int = 1) -> None:
+        """
+        Move the cursor to column ``n``.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Cursor's new column.
+        """
+        self._out_buffer.append(f"\x1b[{n}G")
+
+    def cursor_position(self, pos: Point | None = None) -> None:
         """
         Move cursor to ``pos``.
 
-        If not given, ``pos`` defaults to last reported cursor position.
+        Parameters
+        ----------
+        pos : Point | None, default: None
+            Cursor's new position. If not given, cursor is moved to last reported cursor
+            position.
         """
         if pos is None:
             x, y = self.last_cursor_position_response
@@ -401,10 +506,118 @@ class Vt100Terminal(ABC):
 
     def erase_in_display(self, n: Literal[0, 1, 2, 3] = 0) -> None:
         """
-        Clear part of screen.
+        Clear part of the screen.
 
-        If n is ``0``, clear from cursor to end of screen. If n is ``1``, clear from
-        cursor to beginning of the screen. If n is ``2``, clear entire screen. If n is
-        ``3``, clear entire screen and delete all lines in scrollback buffer.
+        Parameters
+        ----------
+        n : int, default: 0
+            Determines which part of the screen to clear. If n is ``0``, clear from
+            cursor to end of the screen. If n is ``1``, clear from cursor to beginning
+            of the screen. If n is ``2``, clear entire screen. If n is ``3``, clear
+            entire screen and delete all lines in scrollback buffer.
         """
         self._out_buffer.append(f"\x1b[{n}J")
+
+    def erase_in_line(self, n: Literal[0, 1, 2] = 0) -> None:
+        """
+        Erase part of the current line.
+
+        Parameters
+        ----------
+        n : int, default: 0
+            Determines which part of the line to clear. If n is ``0``, clear from cursor
+            to the end of line. If n is ``1``, clear from cursor to beginning of the
+            line. If n is ``2``, clear entire line.
+        """
+        self._out_buffer.append(f"\x1b[{n}K")
+
+    def scroll_up(self, n: int = 1) -> None:
+        """
+        Scroll up ``n`` rows.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of rows to move cursor.
+        """
+        self._out_buffer.append(f"\x1b[{n}S")
+
+    def scroll_down(self, n: int = 1) -> None:
+        """
+        Scroll down ``n`` rows.
+
+        Parameters
+        ----------
+        n : int, default: 1
+            Number of rows to move cursor.
+        """
+        self._out_buffer.append(f"\x1b[{n}T")
+
+    def save_current_cursor_position(self) -> None:
+        """Save the current cursor positon."""
+        self._out_buffer.append("\x1b7")
+
+    def restore_saved_cursor_position(self) -> None:
+        """Restore the saved cursor positon."""
+        self._out_buffer.append("\x1b8")
+
+    def reset_attributes(self) -> None:
+        """Reset character attributes."""
+        self._out_buffer.append("\x1b[0m")
+
+    def sgr_parameters(
+        self,
+        bold: bool = False,
+        faint: bool = False,
+        italic: bool = False,
+        underline: bool = False,
+        blink: bool = False,
+        reverse: bool = False,
+        strikethrough: bool = False,
+        overline: bool = False,
+        foreground_color: tuple[int, int, int] | None = None,
+        background_color: tuple[int, int, int] | None = None,
+    ) -> None:
+        """
+        Select graphic rendition parameters.
+
+        Parameters
+        ----------
+        bold : bool, default: False
+            Whether bold is set.
+        faint : bool, default: False
+            Whether faint is set.
+        italic : bool, default: False
+            Whether italic is set.
+        underline : bool, default: False
+            Whether underline is set.
+        blink : bool, default: False
+            Whether blink is set.
+        reverse : bool, default: False
+            Whether reverse is set.
+        strikethrough : bool, default: False
+            Whether strikethrough is set.
+        overline : bool, default: False
+            Whether overline is set.
+        foreground_color : tuple[int, int, int] | None, default: None
+            Set foreground color if given.
+        background_color : tuple[int, int, int] | None, default: None
+            Set background color if given.
+        """
+        self._out_buffer.append(
+            "\x1b["
+            f"{"1;" if bold else ""}"
+            f"{"2;" if faint else ""}"
+            f"{"3;" if italic else ""}"
+            f"{"4;" if underline else ""}"
+            f"{"5;" if blink else ""}"
+            f"{"7;" if reverse else ""}"
+            f"{"9;" if strikethrough else ""}"
+            f"{"53" if overline else ""}"
+            "m"
+        )
+        if foreground_color:
+            self._out_buffer.append("\x1b[38;2;{};{};{}m".format(*foreground_color))
+
+        if background_color:
+            self._out_buffer.append("\x1b[48;2;{};{};{}m".format(*background_color))
