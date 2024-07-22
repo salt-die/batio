@@ -7,7 +7,7 @@ from .vt100_terminal import Vt100Terminal
 
 __all__ = ["get_platform_terminal"]
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 def get_platform_terminal() -> Vt100Terminal:
