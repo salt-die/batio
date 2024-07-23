@@ -158,6 +158,85 @@ class WindowsTerminal(Vt100Terminal):
         Whether the alternate screen buffer is enabled.
     last_cursor_position_response : Point
         Last reported cursor position.
+
+    Methods
+    -------
+    process_stdin()
+        Read from stdin and feed data into input parser to generate events.
+    raw_mode()
+        Set terminal to raw mode.
+    restore_console(event_handler)
+        Restore console to its original mode.
+    attach()
+        Start generating events from stdin.
+    unattach()
+        Stop generating events from stdin.
+    events()
+        Return a list of input events and reset the event buffer.
+    get_size()
+        Get terminal size.
+    write(data)
+        Write ``data`` to output buffer.
+    flush()
+        Write buffer to output stream and flush.
+    set_title(title)
+        Set terminal title.
+    enter_alternate_screen()
+        Enter alternate screen buffer.
+    exit_alternate_screen()
+        Exit alternate screen buffer.
+    enable_mouse_support()
+        Enable mouse support in terminal.
+    disable_mouse_support()
+        Disable mouse support in terminal.
+    enable_bracketed_paste()
+        Enable bracketed paste in terminal.
+    disable_bracketed_paste()
+        Disable bracketed paste in terminal.
+    enable_reporting_focus()
+        Enable reporting terminal focus.
+    disable_reporting_focus()
+        Disable reporting terminal focus.
+    show_cursor()
+        Show cursor in terminal.
+    hide_cursor()
+        Hide cursor in terminal.
+    request_cursor_position_report()
+        Report current cursor position.
+    line_feed(n)
+        Move to next line, scrolling up if at bottom of screen.
+    cursor_up(n)
+        Move cursor up ``n`` rows.
+    cursor_down(n)
+        Move cursor down ``n`` rows.
+    cursor_forward(n)
+        Move cursor right ``n`` columns.
+    cursor_back(n)
+        Move cursor left ``n`` columns.
+    cursor_next_line(n)
+        Move cursor to beginning of the line ``n`` rows down.
+    cursor_previous_line(n)
+        Move cursor to beginning of the line ``n`` rows up.
+    cursor_horizontal_absolute(n)
+        Move the cursor to column ``n``.
+    cursor_position(pos)
+        Move cursor to ``pos``.
+    erase_in_display(n)
+        Clear part of the screen.
+    erase_in_line(n)
+        Erase part of the current line.
+    scroll_up(n)
+        Scroll up ``n`` rows.
+    scroll_down(n)
+        Scroll down ``n`` rows.
+    save_current_cursor_position()
+        Save the current cursor positon.
+    restore_saved_cursor_position()
+        Restore the saved cursor positon.
+    reset_attributes()
+        Reset character attributes.
+    sgr_parameters(bold, faint, italic, ...)
+        Select graphic rendition parameters.
     """
 
     def process_stdin(self) -> None:
