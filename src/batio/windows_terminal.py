@@ -326,8 +326,8 @@ class WindowsTerminal(Vt100Terminal):
 
     def unattach(self) -> None:
         """Stop generating events from stdin."""
-        self._event_handler = None
         windll.kernel32.SetEvent(self._remove_event)
+        self._event_handler = None
 
 
 def is_vt100_enabled() -> bool:

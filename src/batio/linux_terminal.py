@@ -166,7 +166,7 @@ class LinuxTerminal(Vt100Terminal):
 
     def unattach(self) -> None:
         """Stop generating events from stdin."""
-        self._event_handler = None
         loop = asyncio.get_running_loop()
         loop.remove_reader(STDIN)
         signal.signal(signal.SIGWINCH, signal.SIG_DFL)
+        self._event_handler = None
