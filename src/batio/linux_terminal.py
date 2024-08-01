@@ -20,6 +20,14 @@ class LinuxTerminal(Vt100Terminal):
     """
     A linux VT100 terminal.
 
+    ``raw_mode()`` should be called before calling any other methods.
+    ``restore_console()`` will return the console to its original mode if called after
+    ``raw_mode()``.
+
+    Once ``attach(event_handler)`` is called then whenever stdin has data, it will be
+    read and input events will be generated and passed to ``event_handler``.  Call
+    ``unattach()`` to stop listening to stdin.
+
     Attributes
     ----------
     in_alternate_screen : bool
