@@ -3,7 +3,7 @@
 import asyncio
 
 from batio import get_platform_terminal
-from batio.events import Event, KeyEvent, MouseEvent
+from batio.events import CursorPositionResponseEvent, Event, KeyEvent, MouseEvent, Point
 
 NORMAL = (221, 228, 237), (42, 60, 160)
 HOVER = (255, 240, 246), (50, 72, 192)
@@ -13,11 +13,12 @@ PRESS = (255, 240, 246), (196, 162, 25)
 async def main():
     """Create a pressable button."""
     terminal = get_platform_terminal()
+    button_origin = Point(0, 0)
     ctrl_c_pressed = False
     button_pressed = False
 
     def collides_button(point) -> bool:
-        x, y = terminal.last_cursor_position_response
+        x, y = button_origin
         cx, cy = point
         return x <= cx < x + 8 and y <= cy < y + 3
 
@@ -47,6 +48,9 @@ async def main():
                     draw_button(*PRESS)
                 else:
                     draw_button(*HOVER if collides_button(event.pos) else NORMAL)
+            elif isinstance(event, CursorPositionResponseEvent):
+                nonlocal button_origin
+                button_origin = event.pos
 
     terminal.raw_mode()
     terminal.attach(event_handler)

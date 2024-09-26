@@ -153,6 +153,32 @@ class CursorPositionResponseEvent(Event):
 
 
 @dataclass
+class ColorReportEvent(Event):
+    """
+    A background or foreground color report event.
+
+    Parameters
+    ----------
+    kind : Literal["fg", "bg"]
+        Whether report is for a foreground ("fg") or background ("bg") color.
+    color : tuple[int, int, int]
+        The reported color.
+
+    Attributes
+    ----------
+    kind : Literal["fg", "bg"]
+        Whether report is for a foreground ("fg") or background ("bg") color.
+    color : tuple[int, int, int]
+        The reported color.
+    """
+
+    kind: Literal["fg", "bg"]
+    """Whether report is for a foreground ("fg") or background ("bg") color."""
+    color: tuple[int, int, int]
+    """The reported color."""
+
+
+@dataclass
 class KeyEvent(Event):
     """
     A key event.
