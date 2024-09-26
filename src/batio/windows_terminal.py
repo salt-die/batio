@@ -216,7 +216,7 @@ class WindowsTerminal(Vt100Terminal):
         Report terminal foreground color.
     request_background_color()
         Report terminal background color.
-    expect_drs()
+    expect_dsr()
         Return whether a device status report is expected.
     line_feed(n)
         Move to next line, scrolling up if at bottom of screen.

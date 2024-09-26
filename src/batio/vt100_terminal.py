@@ -131,7 +131,7 @@ class Vt100Terminal(ABC):
         Report terminal foreground color.
     request_background_color()
         Report terminal background color.
-    expect_drs()
+    expect_dsr()
         Return whether a device status report is expected.
     line_feed(n)
         Move to next line, scrolling up if at bottom of screen.
@@ -189,7 +189,7 @@ class Vt100Terminal(ABC):
         """State of VT100 input parser."""
         self._reset_timer_handle: asyncio.TimerHandle | None = None
         """Timeout handle for executing escape buffer."""
-        self._drs_request_times: deque[float] = deque()
+        self._dsr_request_times: deque[float] = deque()
         """Device status report request times."""
         self._last_x: int = 0
         """Last mouse x-coordinate."""
@@ -317,14 +317,14 @@ class Vt100Terminal(ABC):
         escape = self._escape_buffer.getvalue()
         self._escape_buffer = None
 
-        while len(self._drs_request_times) > 0 and (
-            perf_counter() - self._drs_request_times[0] >= DRS_REQUEST_TIMEOUT
+        while len(self._dsr_request_times) > 0 and (
+            perf_counter() - self._dsr_request_times[0] >= DRS_REQUEST_TIMEOUT
         ):
-            self._drs_request_times.popleft()
+            self._dsr_request_times.popleft()
 
-        if len(self._drs_request_times) > 0:
+        if len(self._dsr_request_times) > 0:
             if cpr_match := CPR_RE.fullmatch(escape):
-                self._drs_request_times.popleft()
+                self._dsr_request_times.popleft()
                 y, x = cpr_match.groups()
                 self._event_buffer.append(
                     CursorPositionResponseEvent(Point(int(x) - 1, int(y) - 1))
@@ -332,7 +332,7 @@ class Vt100Terminal(ABC):
                 return
 
             if color_match := COLOR_RE.fullmatch(escape):
-                self._drs_request_times.popleft()
+                self._dsr_request_times.popleft()
                 kind, r, g, b = color_match.groups()
                 self._event_buffer.append(
                     ColorReportEvent(
@@ -493,25 +493,25 @@ class Vt100Terminal(ABC):
 
     def request_cursor_position_report(self) -> None:
         """Report current cursor position."""
-        self._drs_request_times.append(perf_counter())
+        self._dsr_request_times.append(perf_counter())
         self._out_buffer.append("\x1b[6n")
         self.flush()
 
     def request_foreground_color(self):
         """Report terminal foreground color."""
-        self._drs_request_times.append(perf_counter())
+        self._dsr_request_times.append(perf_counter())
         self._out_buffer.append("\x1b]10;?\x1b\\")
         self.flush()
 
     def request_background_color(self):
         """Report terminal background color."""
-        self._drs_request_times.append(perf_counter())
+        self._dsr_request_times.append(perf_counter())
         self._out_buffer.append("\x1b]11;?\x1b\\")
         self.flush()
 
-    def expect_drs(self) -> bool:
+    def expect_dsr(self) -> bool:
         """Return whether a device status report is expected."""
-        return len(self._drs_request_times) > 0
+        return len(self._dsr_request_times) > 0
 
     def line_feed(self, n: int = 1) -> None:
         """
