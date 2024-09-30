@@ -396,7 +396,7 @@ class Vt100Terminal(ABC):
             kind, height, width = pixel_geometry_match.groups()
             event = PixelGeometryReportEvent(
                 kind="cell" if kind == "6" else "terminal",
-                geometry=Size(int(height), int(width)),
+                geometry=Size(int(width), int(height)),
             )
         else:
             return False
