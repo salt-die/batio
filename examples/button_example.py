@@ -3,7 +3,7 @@
 import asyncio
 
 from batio import get_platform_terminal
-from batio.events import CursorPositionResponseEvent, Event, KeyEvent, MouseEvent, Point
+from batio.events import CursorPositionReportEvent, Event, KeyEvent, MouseEvent, Point
 
 NORMAL = (221, 228, 237), (42, 60, 160)
 HOVER = (255, 240, 246), (50, 72, 192)
@@ -48,7 +48,7 @@ async def main():
                     draw_button(*PRESS)
                 else:
                     draw_button(*HOVER if collides_button(event.pos) else NORMAL)
-            elif isinstance(event, CursorPositionResponseEvent):
+            elif isinstance(event, CursorPositionReportEvent):
                 nonlocal button_origin
                 button_origin = event.pos
 

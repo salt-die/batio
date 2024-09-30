@@ -15,7 +15,7 @@ from typing import Final, Literal
 from .ansi_escapes import ANSI_ESCAPES
 from .events import (
     ColorReportEvent,
-    CursorPositionResponseEvent,
+    CursorPositionReportEvent,
     DeviceAttributesReportEvent,
     Event,
     FocusEvent,
@@ -379,10 +379,11 @@ class Vt100Terminal(ABC):
             self._event_buffer.append(UnknownEscapeSequence(escape))
 
     def _execute_dsr_request(self, escape: str) -> bool:
+        """Return whether a device status report was issued."""
         event: Event
         if cpr_match := CPR_RE.fullmatch(escape):
             y, x = cpr_match.groups()
-            event = CursorPositionResponseEvent(Point(int(y) - 1, int(x) - 1))
+            event = CursorPositionReportEvent(Point(int(x) - 1, int(y) - 1))
         elif color_match := COLOR_RE.fullmatch(escape):
             kind, r, g, b = color_match.groups()
             event = ColorReportEvent(

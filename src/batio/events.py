@@ -5,7 +5,7 @@ from typing import Literal, NamedTuple
 
 __all__ = [
     "ColorReportEvent",
-    "CursorPositionResponseEvent",
+    "CursorPositionReportEvent",
     "Event",
     "FocusEvent",
     "Key",
@@ -134,9 +134,9 @@ class ResizeEvent(Event):
 
 
 @dataclass
-class CursorPositionResponseEvent(Event):
+class CursorPositionReportEvent(Event):
     """
-    A cursor position response event.
+    A cursor position report event.
 
     Parameters
     ----------
