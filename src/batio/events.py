@@ -180,6 +180,55 @@ class ColorReportEvent(Event):
 
 
 @dataclass
+class DeviceAttributesReportEvent(Event):
+    """
+    A primary device attributes report event.
+
+    A description of the primary device attributes can be found at https://vt100.net/docs/vt510-rm/chapter4.html.
+    (Search text for "Primary Device Attributes").
+
+    Parameters
+    ----------
+    device_attributes : frozenset[int]
+        Reported terminal attributes.
+
+    Attributes
+    ----------
+    device_attributes : frozenset[int]
+        Reported terminal attributes.
+    """
+
+    device_attributes: frozenset[int]
+    """Reported terminal attributes."""
+
+
+@dataclass
+class PixelGeometryReportEvent(Event):
+    """
+    A pixel geometry report.
+
+    Parameters
+    ----------
+    kind : Literal["cell", "terminal"]
+        Whether report is pixels per cell or pixels in terminal.
+    geometry : Size
+        Size of the terminal cells or terminal (depending on ``kind``) in pixels.
+
+    Attributes
+    ----------
+    kind : Literal["cell", "terminal"]
+        Whether report is pixels per cell or pixels in terminal.
+    geometry : Size
+        Size of the terminal cells or terminal (depending on ``kind``) in pixels.
+    """
+
+    kind: Literal["cell", "terminal"]
+    """Whether report is pixels per cell or pixels in terminal."""
+    geometry: Size
+    """Size of the terminal cells or terminal (depending on ``kind``) in pixels."""
+
+
+@dataclass
 class KeyEvent(Event):
     """
     A key event.

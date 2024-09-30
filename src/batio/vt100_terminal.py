@@ -16,6 +16,7 @@ from .ansi_escapes import ANSI_ESCAPES
 from .events import (
     ColorReportEvent,
     CursorPositionResponseEvent,
+    DeviceAttributesReportEvent,
     Event,
     FocusEvent,
     KeyEvent,
@@ -23,6 +24,7 @@ from .events import (
     MouseEvent,
     MouseEventType,
     PasteEvent,
+    PixelGeometryReportEvent,
     Point,
     Size,
     UnknownEscapeSequence,
@@ -32,6 +34,8 @@ CPR_RE: Final[re.Pattern[str]] = re.compile(r"\x1b\[(\d+);(\d+)R")
 COLOR_RE: Final[re.Pattern[str]] = re.compile(
     r"\x1b\]1([10]);rgb:([0-9a-f]{4})/([0-9a-f]{4})/([0-9a-f]{4})\x1b\\"
 )
+DEVICE_ATTRIBUTES_RE: Final[re.Pattern[str]] = re.compile(r"\x1b\[\?[0-9;]+c")
+PIXEL_GEOMETRY_RE: Final[re.Pattern[str]] = re.compile(r"\x1b\[([6|4]);(\d+);(\d+)t")
 MOUSE_SGR_RE: Final[re.Pattern[str]] = re.compile(r"\x1b\[<(\d+);(\d+);(\d+)(m|M)")
 PARAMS_RE: Final[re.Pattern[str]] = re.compile(r"[0-9;]")
 BRACKETED_PASTE_START: Final[str] = "\x1b[200~"
@@ -131,6 +135,12 @@ class Vt100Terminal(ABC):
         Report terminal foreground color.
     request_background_color()
         Report terminal background color.
+    request_device_attributes()
+        Report device attributes.
+    request_cell_geometry()
+        Report pixel geometry per cell.
+    request_terminal_geometry()
+        Report pixel geometry of terminal.
     expect_dsr()
         Return whether a device status report is expected.
     line_feed(n)
@@ -322,25 +332,8 @@ class Vt100Terminal(ABC):
         ):
             self._dsr_request_times.popleft()
 
-        if len(self._dsr_request_times) > 0:
-            if cpr_match := CPR_RE.fullmatch(escape):
-                self._dsr_request_times.popleft()
-                y, x = cpr_match.groups()
-                self._event_buffer.append(
-                    CursorPositionResponseEvent(Point(int(x) - 1, int(y) - 1))
-                )
-                return
-
-            if color_match := COLOR_RE.fullmatch(escape):
-                self._dsr_request_times.popleft()
-                kind, r, g, b = color_match.groups()
-                self._event_buffer.append(
-                    ColorReportEvent(
-                        kind="fg" if kind == "0" else "bg",
-                        color=(int(r[:2], 16), int(g[:2], 16), int(b[:2], 16)),
-                    )
-                )
-                return
+        if len(self._dsr_request_times) > 0 and self._execute_dsr_request(escape):
+            return
 
         if escape == BRACKETED_PASTE_START:
             self._state = ParserState.PASTE
@@ -384,6 +377,33 @@ class Vt100Terminal(ABC):
             self._event_buffer.append(KeyEvent(escape[1], alt=True))
         else:
             self._event_buffer.append(UnknownEscapeSequence(escape))
+
+    def _execute_dsr_request(self, escape: str) -> bool:
+        event: Event
+        if cpr_match := CPR_RE.fullmatch(escape):
+            y, x = cpr_match.groups()
+            event = CursorPositionResponseEvent(Point(int(y) - 1, int(x) - 1))
+        elif color_match := COLOR_RE.fullmatch(escape):
+            kind, r, g, b = color_match.groups()
+            event = ColorReportEvent(
+                kind="fg" if kind == "0" else "bg",
+                color=(int(r[:2], 16), int(g[:2], 16), int(b[:2], 16)),
+            )
+        elif device_attributes_match := DEVICE_ATTRIBUTES_RE.fullmatch(escape):
+            device_attributes = device_attributes_match.group()[3:-1].split(";")
+            event = DeviceAttributesReportEvent(frozenset(map(int, device_attributes)))
+        elif pixel_geometry_match := PIXEL_GEOMETRY_RE.fullmatch(escape):
+            kind, height, width = pixel_geometry_match.groups()
+            event = PixelGeometryReportEvent(
+                kind="cell" if kind == "6" else "terminal",
+                geometry=Size(int(height), int(width)),
+            )
+        else:
+            return False
+
+        self._dsr_request_times.popleft()
+        self._event_buffer.append(event)
+        return True
 
     def _reset_escape(self) -> None:
         """Execute escape buffer after a timeout period."""
@@ -491,23 +511,35 @@ class Vt100Terminal(ABC):
         """Hide cursor in terminal."""
         self._out_buffer.append("\x1b[?25l")
 
+    def _request_dsr(self, request: str):
+        """Send a DSR request."""
+        self._dsr_request_times.append(perf_counter())
+        self._out_buffer.append(request)
+        self.flush()
+
     def request_cursor_position_report(self) -> None:
         """Report current cursor position."""
-        self._dsr_request_times.append(perf_counter())
-        self._out_buffer.append("\x1b[6n")
-        self.flush()
+        self._request_dsr("\x1b[6n")
 
-    def request_foreground_color(self):
+    def request_foreground_color(self) -> None:
         """Report terminal foreground color."""
-        self._dsr_request_times.append(perf_counter())
-        self._out_buffer.append("\x1b]10;?\x1b\\")
-        self.flush()
+        self._request_dsr("\x1b]10;?\x1b\\")
 
-    def request_background_color(self):
+    def request_background_color(self) -> None:
         """Report terminal background color."""
-        self._dsr_request_times.append(perf_counter())
-        self._out_buffer.append("\x1b]11;?\x1b\\")
-        self.flush()
+        self._request_dsr("\x1b]11;?\x1b\\")
+
+    def request_device_attributes(self) -> None:
+        """Report device attributes."""
+        self._request_dsr("\x1b[c")
+
+    def request_cell_geometry(self) -> None:
+        """Report pixel geometry per cell."""
+        self._request_dsr("\x1b[16t")
+
+    def request_terminal_geometry(self) -> None:
+        """Report pixel geometry of terminal."""
+        self._request_dsr("\x1b[14t")
 
     def expect_dsr(self) -> bool:
         """Return whether a device status report is expected."""
