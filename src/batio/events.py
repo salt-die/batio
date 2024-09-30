@@ -4,15 +4,21 @@ from dataclasses import dataclass
 from typing import Literal, NamedTuple
 
 __all__ = [
+    "CharKey",
     "ColorReportEvent",
     "CursorPositionReportEvent",
+    "DeviceAttributesReportEvent",
     "Event",
     "FocusEvent",
     "Key",
     "KeyEvent",
+    "MouseButton",
     "MouseEvent",
+    "MouseEventType",
     "PasteEvent",
+    "PixelGeometryReportEvent",
     "ResizeEvent",
+    "SpecialKey",
 ]
 
 # fmt: off
